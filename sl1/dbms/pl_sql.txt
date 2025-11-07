@@ -1,0 +1,73 @@
+CREATE TABLE borrower (
+    roll_no NUMBER,
+    book_name VARCHAR2(100),
+    date_of_issue DATE,
+    return_date DATE,
+    status CHAR(1),  -- 'I' for Issued, 'R' for Returned
+    fine NUMBER
+);
+
+
+SET SERVEROUTPUT ON;
+
+DECLARE
+    -- Input variables (these can be substituted with real values or user inputs)
+    v_roll_no    borrower.roll_no%TYPE := &roll_no;       -- student roll number
+    v_book_name  borrower.book_name%TYPE := '&book_name'; -- book name (string)
+
+    -- Variables to store data from borrower table
+    v_date       borrower.date_of_issue%TYPE;
+    v_status     borrower.status%TYPE;
+    v_days       NUMBER;
+    v_fine       NUMBER := 0;
+
+BEGIN
+    -- Try fetching the record for the given roll number & book
+    SELECT date_of_issue, status 
+    INTO v_date, v_status
+    FROM borrower
+    WHERE roll_no = v_roll_no 
+      AND book_name = v_book_name;
+
+    -- Check if the book has already been returned
+    IF v_status = 'R' THEN
+        DBMS_OUTPUT.PUT_LINE('Book already returned.');
+    ELSE
+        -- Calculate number of days since issue
+        v_days := TRUNC(SYSDATE - v_date);
+
+        -- Calculate fine based on days
+        IF v_days > 30 THEN
+            v_fine := 30 * 5 + (v_days - 30) * 50; -- ₹5/day for first 30, ₹50/day after 30
+        ELSIF v_days >= 15 THEN
+            v_fine := v_days * 5; -- ₹5/day if 15–30 days
+        ELSE
+            v_fine := 0; -- No fine if <15 days
+        END IF;
+
+        -- Update borrower table: set status to 'R' and fine value
+        UPDATE borrower
+        SET status = 'R',
+            return_date = SYSDATE,
+            fine = v_fine
+        WHERE roll_no = v_roll_no 
+          AND book_name = v_book_name;
+
+        COMMIT;
+
+        -- Display info
+        DBMS_OUTPUT.PUT_LINE('Book returned successfully.');
+        DBMS_OUTPUT.PUT_LINE('Days kept: ' || v_days);
+        DBMS_OUTPUT.PUT_LINE('Fine amount: ₹' || v_fine);
+    END IF;
+
+-- ======================
+-- EXCEPTION HANDLING
+-- ======================
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('No record found — invalid roll number or book name.');
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error: ' || SQLERRM);
+END;
+/

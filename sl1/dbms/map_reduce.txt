@@ -1,0 +1,29 @@
+collection name 'sales'  stores data about sales transactions: 
+db.sales.insertMany([ 
+{ _id: 1, category: 'Electronics', amount: 1000 }, 
+{ _id: 2, category: 'Electronics', amount: 1500 }, 
+{ _id: 3, category: 'Clothing', amount: 500 }, 
+{ _id: 4, category: 'Clothing', amount: 700 }, 
+{ _id: 5, category: 'Grocery', amount: 200 } 
+]) 
+Map Function 
+The 'map' function defines each category as the key and the sale amount as the value: 
+var mapFunction = function() { 
+emit(this.category, this.amount); 
+}; 
+Reduce Function 
+The 'reduce' function sums up all the sales amounts for each category: 
+var reduceFunction = function(keyCategory, valuesAmounts) { 
+return Array.sum(valuesAmounts); 
+}; 
+Map-Reduce Operation 
+db.sales.mapReduce( 
+mapFunction, 
+reduceFunction, 
+{ out: 'total_sales_by_category' } 
+) 
+Output 
+After  Map-Reduce operation, output collection 'total_sales_by_category' will contain: 
+{ "_id" : "Clothing", "value" : 1200 } 
+{ "_id" : "Electronics", "value" : 2500 } 
+{ "_id" : "Grocery", "value" : 200 }
